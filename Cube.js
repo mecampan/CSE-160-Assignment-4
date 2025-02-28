@@ -6,9 +6,11 @@ class Cube {
         this.buffer = null;
         this.vertexBuffer = null;
         this.uvBuffer = null;
+        this.normalBuffer = null;
         this.vertices = null;
         this.cubeVerts = null;
         this.textureVerts = null;
+        this.normalVerts = null;
         this.textureNum = COLOR;
     }
 
@@ -84,6 +86,35 @@ class Cube {
                 0,0, 0,1, 1,1
             ]
         }
+
+        if(this.normalVerts == null)
+        {
+            this.normalVerts = [
+                // Front Face (0,0,1)
+                0,0,1, 0,0,1, 0,0,1,
+                0,0,1, 0,0,1, 0,0,1,
+            
+                // Top Face (0,1,0)
+                0,1,0, 0,1,0, 0,1,0,
+                0,1,0, 0,1,0, 0,1,0,
+            
+                // Left Face (-1,0,0)
+                -1,0,0, -1,0,0, -1,0,0,
+                -1,0,0, -1,0,0, -1,0,0,
+            
+                // Right Face (1,0,0)
+                1,0,0, 1,0,0, 1,0,0,
+                1,0,0, 1,0,0, 1,0,0,
+            
+                // Back Face (0,0,-1)
+                0,0,-1, 0,0,-1, 0,0,-1,
+                0,0,-1, 0,0,-1, 0,0,-1,
+            
+                // Bottom Face (0,-1,0)
+                0,-1,0, 0,-1,0, 0,-1,0,
+                0,-1,0, 0,-1,0, 0,-1,0
+            ];
+        }
     }
 
     setupBuffer() {
@@ -120,6 +151,24 @@ class Cube {
             gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
             // Enable the assignment to a_Position variable
             gl.enableVertexAttribArray(a_UV);
+        }
+
+        // Create a buffer object for UV
+        if(this.normalBuffer === null) {
+            this.normalBuffer = gl.createBuffer();
+            if (!this.normalBuffer) {
+                console.log('Failed to create the normalBuffer object');
+                return -1;
+            }
+            
+            // Bind the buffer object to target
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+            // Write date into the buffer object
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.normalVerts), gl.DYNAMIC_DRAW);
+            // Assign the buffer object to a_Position variable
+            gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+            // Enable the assignment to a_Position variable
+            gl.enableVertexAttribArray(a_Normal); //<---- This line here is what causes Vertex buffer is not big enough...
         }
     }
     

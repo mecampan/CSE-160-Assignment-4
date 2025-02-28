@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>There Be Treasure!</title>
+    <title>Let there be Light!</title>
   </head>
 
   <body onload="main()">
@@ -10,22 +10,17 @@
     Please use a browser that supports "canvas"
     </canvas>
     <p><span id="numdot">XYZ</span> 
-    <p><span id="numGold">Number of Treasures on the Island: 0</span> </p>
-    <p><button type="button" id="pirateMusicButton">Play Generic Pirate Music</button>     
-    <p>Animation for Face: <button type="button" id="faceAnimationButtonOn">ON</button>
-    <button type="button" id="faceAnimationButtonOff">OFF</button>
-    <p>Animation for Body: <button type="button" id="bodyAnimationButtonOn">ON</button>
-    <button type="button" id="bodyAnimationButtonOff">OFF</button>
-    <p>Start / Stop Rain: <button type="button" id="rainButtonOn">ON</button>
-    <button type="button" id="rainButtonOff">OFF</button>
-    Rain Drops:<input id="rainDrops" type="number" value="30000" step="1000"/>
+    <p>Normals: <button type="button" id="normalsOn">ON</button>
+    <button type="button" id="normalsOff">OFF</button>
+    
+    <p>
+    Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderX">
+    Light Y <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderY">
+    Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderZ">
 
     <p><br>Camera Rotate:  (Z)(X) or (Left Arrow)(Right Arrow) or Click and Drag Mouse
     <p>Camera Movement:    (W)(A)(S)(D)
     <p>Camera Verticality: (Q)(E) or (Up Arrow)(Down Arrow)
-
-    <p><br>Upper Arm Slider<input type ="range" min="0" max="100" value="50" class="slider" id="upperArmSlider">
-    <p>Lower Arm Slider<input type ="range" min="0" max="100" value="50" class="slider" id="lowerArmSlider">
 
     <script src="lib/webgl-utils.js"></script>
     <script src="lib/webgl-debug.js"></script>
@@ -33,6 +28,7 @@
     <script src="lib/cuon-matrix-cse160.js"></script>
     <script src="Triangle.js"></script>
     <script src="Circle.js"></script>
+    <script src="Sphere.js"></script>
     <script src="Cube.js"></script>
     <script src="Pyramid.js"></script>
     <script src="Tetrahedron.js"></script>
