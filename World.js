@@ -9,13 +9,16 @@ var VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
+  uniform mat4 u_NormalMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
+
   void main() {
     gl_Position =  u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
-    v_Normal = a_Normal;
+    //v_Normal = a_Normal;
+    v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 1.0)));
     v_VertPos = u_ModelMatrix * a_Position;
   }`
 
@@ -28,6 +31,8 @@ var FSHADER_SOURCE =`
 
   uniform vec4 u_FragColor;
   uniform vec3 u_lightPos;
+  uniform vec3 u_cameraPos;
+  uniform bool u_lightOn;
 
   uniform sampler2D u_Sampler;
   uniform sampler2D u_WoodTexture;
@@ -38,9 +43,9 @@ var FSHADER_SOURCE =`
   
   void main() {
     if (u_whichTexture == -3) {
-      gl_FragColor = vec4((v_Normal + 1.0) / 2.0, 1.0);
+      gl_FragColor = vec4(normalize(v_Normal) * 0.5 + 0.5, 1.0); // Convert normals to color
     }
-    if (u_whichTexture == -2) {
+    else if (u_whichTexture == -2) {
       gl_FragColor = u_FragColor;                 // Use color
     }
     else if (u_whichTexture == -1) {
@@ -85,20 +90,40 @@ var FSHADER_SOURCE =`
       gl_FragColor = vec4(1.0, 0.2, 0.1, 1.0);    // Error, put Redish tint
     }
 
-    vec3 lightVector = vec3(v_VertPos)-u_lightPos;
+    vec3 lightVector = u_lightPos - vec3(v_VertPos);
     float r = length(lightVector);
-    if (r < 1.0)
-    {
-      gl_FragColor = vec4(1, 0, 0, 1);
-    }
-    else if (r < 2.0)
-    {
-      gl_FragColor = vec4(0, 1, 0, 1);
-    }
 
+    // N dot L
+    vec3 L = normalize(lightVector);
+    vec3 N = normalize(v_Normal);
+    float nDotL = max(dot(N,L), 0.0);
+
+    // Reflection 
+    vec3 R = reflect(-L, N);
+
+    // eye
+    vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+
+    //Specular
+    float specular = pow(max(dot(E, R), 0.0), 64.0) * 0.8;
+    
+    vec3 diffuse = vec3(1.0, 1.0, 0.9) * vec3(gl_FragColor) * nDotL * 0.7;
+    vec3 ambient = vec3(gl_FragColor) * 0.2;
+    if(u_lightOn) 
+    {
+      if(u_whichTexture == 0)
+      {
+        gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+      }
+      else
+      {
+        gl_FragColor = vec4(diffuse + ambient, 1.0);
+      }
+    }
   }`
 
 // Global Variables
+const NORMALCOLOR = -3;
 const COLOR = -2;
 const DEBUG = -1;
 const SKYTEXTURE = 0;
@@ -120,8 +145,11 @@ let a_UV;
 let a_Normal;
 let u_FragColor;
 let u_lightPos;
+let u_lightOn;
+let u_cameraPos;
 let u_Size;
 let u_ModelMatrix;
+let u_NormalMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
@@ -190,11 +218,32 @@ function connectVariablesToGLSL() {
     return;
   }  
 
+  // Get the storage location of u_lightOn
+  u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
+  if (!u_lightOn) {
+    console.log('Failed to get the storage location of u_lightOn');
+    return;
+  }  
+
+  // Get the storage location of u_cameraPos
+  u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+  if (!u_cameraPos) {
+    console.log('Failed to get the storage location of u_cameraPos');
+    return;
+  }  
+
   // Get the storage location of u_ModelMatrix
   u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
   if(!u_ModelMatrix) {
     console.log('Failed to get the storage location of u_ModelMatrix');
     return;
+  }
+
+  // Get the storage location of u_NormalMatrix
+  u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+  if(!u_NormalMatrix) {
+    console.log('Failed to get the storage location of u_NormalMatrix');
+    //return;
   }
 
   // Get the storage location of u_GlobalRotateMatrix
@@ -266,16 +315,24 @@ function connectVariablesToGLSL() {
 }
 
 // Globals related to HTML UI elements
-let normals = false;
+let normals = true;
+let g_lightOn = true;
+let texture = COLOR;
+let g_textureNum = -3;
 let g_lightPos = [0, 1, 2];
 
 function addActionsforHtmlUI() {
   document.getElementById('normalsOn').onclick = function() { normals = true; };
   document.getElementById('normalsOff').onclick = function() { normals = false; };
 
+  document.getElementById('lightOn').onclick = function() { g_lightOn = true; };
+  document.getElementById('lightOff').onclick = function() { g_lightOn = false; };
+
   document.getElementById('lightSliderX').onmousemove = function () { g_lightPos[0] = this.value/100; renderAllShapes(); };
   document.getElementById('lightSliderY').onmousemove = function () { g_lightPos[1] = this.value/100; renderAllShapes(); };
   document.getElementById('lightSliderZ').onmousemove = function () { g_lightPos[2] = this.value/100; renderAllShapes(); };
+
+  document.getElementById('textureInput').onclick = function () { g_textureNum = this.value; renderAllShapes(); };
 }
 
 
@@ -428,11 +485,16 @@ function tick() {
   g_seconds = performance.now()/1000.0 - g_startTime;
   //console.log(g_seconds);
 
+  //updateAnimationAngles();
   renderAllShapes();
   // Tell the browser to update again when it has time
   requestAnimationFrame(tick);
 }
 
+function updateAnimationAngles()
+{
+  g_lightPos[0] = Math.cos(g_seconds);
+}
 
 function renderAllShapes(ev) {
   var startTime = performance.now();
@@ -448,17 +510,22 @@ function renderAllShapes(ev) {
 
   // Pass the light position to GLSL
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+
+  // Pass the camera position to GLSL
+  gl.uniform3f(u_cameraPos, camera.eye.elements[0], camera.eye.elements[1], camera.eye.elements[2]);
+
+  // Pass the light status
+  gl.uniform1i(u_lightOn, g_lightOn);
   
   var light = new Cube();
   light.color = [1.0, 1.0, 0.0, 1.0];
   light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-  light.matrix.scale(0.5, 0.5, 0.5);
-  light.renderfaster();
+  light.matrix.scale(-0.1, -0.1, -0.1);
+  light.render();
 
-  let texture = -2;
   if(normals)
   {
-    texture = -3;
+    texture = NORMALCOLOR;
   }
 
   var skyBox = new Cube();
@@ -466,16 +533,17 @@ function renderAllShapes(ev) {
   skyBox.textureNum = SKYTEXTURE;
   skyBox.matrix.scale(20, 20, 20);
   skyBox.matrix.translate(-0.5, -0.5, 0.5);
-  skyBox.renderfaster();
+  skyBox.render();
 
   var cube = new Cube();
-  cube.textureNum = texture;
-  cube.color = [1.0, 0.5, 0.5, 1.0];
-  cube.renderfaster();
+  cube.textureNum = g_textureNum;
+  cube.matrix.translate(0.0, 0.0, 1.0);
+  cube.render();
 
   var sphere = new Sphere();
-  sphere.textureNum = texture;
+  sphere.textureNum = g_textureNum;
   sphere.matrix.translate(0, 0, -1);
+  //sphere.normalMatrix.setInverseOf(sphere.matrix).transpose();
   sphere.render();
 
   var duration = performance.now() - startTime;
