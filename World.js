@@ -33,6 +33,9 @@ var FSHADER_SOURCE =`
   uniform vec3 u_lightPos;
   uniform vec3 u_cameraPos;
   uniform bool u_lightOn;
+  uniform float u_SpecularPow;
+  uniform float u_DiffusePow;
+  uniform float u_AmbientPow;
 
   uniform sampler2D u_Sampler;
   uniform sampler2D u_WoodTexture;
@@ -105,20 +108,18 @@ var FSHADER_SOURCE =`
     vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
 
     //Specular
-    float specular = pow(max(dot(E, R), 0.0), 64.0) * 0.8;
+    float specular = pow(max(dot(E, R), 0.0), 64.0) * u_SpecularPow;
+    //float specular = pow(max(dot(E, R), 0.0), 64.0) * 0.8;
     
-    vec3 diffuse = vec3(1.0, 1.0, 0.9) * vec3(gl_FragColor) * nDotL * 0.7;
-    vec3 ambient = vec3(gl_FragColor) * 0.2;
+    vec3 diffuse = vec3(1.0, 1.0, 0.9) * vec3(gl_FragColor) * nDotL * u_DiffusePow;
+    //vec3 diffuse = vec3(1.0, 1.0, 0.9) * vec3(gl_FragColor) * nDotL * 0.7;
+
+    vec3 ambient = vec3(gl_FragColor) * u_AmbientPow;
+    //vec3 ambient = vec3(gl_FragColor) * 0.2;
+
     if(u_lightOn) 
     {
-      if(u_whichTexture == 0)
-      {
-        gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
-      }
-      else
-      {
-        gl_FragColor = vec4(diffuse + ambient, 1.0);
-      }
+      gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
     }
   }`
 
@@ -146,13 +147,18 @@ let a_Normal;
 let u_FragColor;
 let u_lightPos;
 let u_lightOn;
-let u_cameraPos;
 let u_Size;
+let u_cameraPos;
+let u_SpecularPow;
+let u_DiffusePow;
+let u_AmbientPow;
+
 let u_ModelMatrix;
 let u_NormalMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
+
 let u_Sampler;
 let u_WoodTexture;
 let u_WaterTexture;
@@ -222,6 +228,27 @@ function connectVariablesToGLSL() {
   u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
   if (!u_lightOn) {
     console.log('Failed to get the storage location of u_lightOn');
+    return;
+  }  
+
+  // Get the storage location of u_SpecularPow
+  u_SpecularPow = gl.getUniformLocation(gl.program, 'u_SpecularPow');
+  if (!u_SpecularPow) {
+    console.log('Failed to get the storage location of u_SpecularPow');
+    return;
+  }  
+
+  // Get the storage location of u_DiffusePow
+  u_DiffusePow = gl.getUniformLocation(gl.program, 'u_DiffusePow');
+  if (!u_DiffusePow) {
+    console.log('Failed to get the storage location of u_DiffusePow');
+    return;
+  }  
+
+  // Get the storage location of u_AmbientPow
+  u_AmbientPow = gl.getUniformLocation(gl.program, 'u_AmbientPow');
+  if (!u_AmbientPow) {
+    console.log('Failed to get the storage location of u_AmbientPow');
     return;
   }  
 
@@ -317,9 +344,9 @@ function connectVariablesToGLSL() {
 // Globals related to HTML UI elements
 let normals = true;
 let g_lightOn = true;
-let texture = COLOR;
-let g_textureNum = -3;
+let g_textureNum = -2;
 let g_lightPos = [0, 1, 2];
+let g_lightAnimation = false;
 
 function addActionsforHtmlUI() {
   document.getElementById('normalsOn').onclick = function() { normals = true; };
@@ -328,9 +355,18 @@ function addActionsforHtmlUI() {
   document.getElementById('lightOn').onclick = function() { g_lightOn = true; };
   document.getElementById('lightOff').onclick = function() { g_lightOn = false; };
 
+  document.getElementById('lightAnimOn').onclick = function() { g_lightAnimation = true; };
+  document.getElementById('lightAnimOff').onclick = function() { g_lightAnimation = false; };
+
   document.getElementById('lightSliderX').onmousemove = function () { g_lightPos[0] = this.value/100; renderAllShapes(); };
   document.getElementById('lightSliderY').onmousemove = function () { g_lightPos[1] = this.value/100; renderAllShapes(); };
   document.getElementById('lightSliderZ').onmousemove = function () { g_lightPos[2] = this.value/100; renderAllShapes(); };
+
+  document.getElementById('specularVal').onmousemove = function () { 
+    gl.uniform1f(u_SpecularPow, parseFloat(this.value) / 100); 
+    renderAllShapes(); 
+  };
+
 
   document.getElementById('textureInput').onclick = function () { g_textureNum = this.value; renderAllShapes(); };
 }
@@ -466,6 +502,8 @@ function main() {
   initTextures('Rock.jpg', u_RockTexture, ROCKTEXTURE);
   initTextures('leaves.png', u_TreeTexture, TREETEXTURE);
 
+  gl.uniform1f(u_SpecularPow, 0.8); // Set default specular power
+
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   //gl.clear(gl.COLOR_BUFFER_BIT);
@@ -485,7 +523,7 @@ function tick() {
   g_seconds = performance.now()/1000.0 - g_startTime;
   //console.log(g_seconds);
 
-  //updateAnimationAngles();
+  updateAnimationAngles();
   renderAllShapes();
   // Tell the browser to update again when it has time
   requestAnimationFrame(tick);
@@ -493,7 +531,8 @@ function tick() {
 
 function updateAnimationAngles()
 {
-  g_lightPos[0] = Math.cos(g_seconds);
+  if(g_lightAnimation)
+    g_lightPos[0] = Math.cos(g_seconds);
 }
 
 function renderAllShapes(ev) {
@@ -523,11 +562,6 @@ function renderAllShapes(ev) {
   light.matrix.scale(-0.1, -0.1, -0.1);
   light.render();
 
-  if(normals)
-  {
-    texture = NORMALCOLOR;
-  }
-
   var skyBox = new Cube();
   skyBox.color = [ 0.0, 0.2, 0.2, 1.0 ];
   skyBox.textureNum = SKYTEXTURE;
@@ -536,18 +570,73 @@ function renderAllShapes(ev) {
   skyBox.render();
 
   var cube = new Cube();
-  cube.textureNum = g_textureNum;
+  cube.textureNum = normals? NORMALCOLOR : g_textureNum;
   cube.matrix.translate(0.0, 0.0, 1.0);
   cube.render();
 
   var sphere = new Sphere();
-  sphere.textureNum = g_textureNum;
+  sphere.textureNum = normals? NORMALCOLOR : g_textureNum;
   sphere.matrix.translate(0, 0, -1);
   //sphere.normalMatrix.setInverseOf(sphere.matrix).transpose();
   sphere.render();
 
   var duration = performance.now() - startTime;
   sendToTextHTML(`ms: ${Math.floor(duration)} fps: ${Math.floor(10000/duration)}`, "numdot");
+  let textureName;
+  switch (parseInt(g_textureNum, 10)) {
+    case -3:
+      textureName = "Normals Coloring";
+      break;
+
+    case -2:
+      textureName = "Color";
+      break;
+
+    case 0:
+      textureName = "Sky Texture";
+      break;
+
+    case 1:
+      textureName = "Sky Texture with Color";
+      break;
+
+    case 2:
+      textureName = "Wood Texture";
+      break;
+
+    case 3:
+      textureName = "Wood Texture with Color";
+      break;  
+      
+    case 4:
+      textureName = "Water Texture";
+      break;
+
+    case 5:
+      textureName = "Water Texture with Color";
+      break;  
+
+    case 6:
+      textureName = "Rock Texture";
+      break;
+
+    case 7:
+      textureName = "Rock Texture with Color";
+      break;  
+
+    case 8:
+      textureName = "Tree Texture";
+      break;
+
+    case 9:
+      textureName = "Tree Texture with Color";
+      break;  
+
+    default:
+      textureName = "Debug";
+      break;
+  }
+  sendToTextHTML(`${textureName}`, "textureType");
 }
 
 function sendToTextHTML(text, htmlID) {
