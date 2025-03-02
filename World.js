@@ -41,6 +41,7 @@ var FSHADER_SOURCE =`
   uniform float u_ambientPow;
 
   // Spotlight
+  uniform vec3 u_spotlightColor;
   uniform bool u_spotlightOn;
   uniform vec3 u_spotlightPos;
   uniform vec3 u_spotlightDirection;
@@ -156,7 +157,7 @@ var FSHADER_SOURCE =`
 
     if(u_spotlightOn)
     {
-      gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * brightness;
+      gl_FragColor.rgb += u_spotlightColor * brightness;
       gl_FragColor.a = 1.0;
     }
 }`
@@ -192,6 +193,7 @@ let u_specularPow;
 let u_diffusePow;
 let u_ambientPow;
 
+let u_spotlightColor;
 let u_spotlightPos;
 let u_spotlightDirection;
 let u_spotlightOn;
@@ -313,6 +315,13 @@ function connectVariablesToGLSL() {
   }  
 
   // Spotlights
+  // Get the storage location of u_spotlightColor
+  u_spotlightColor = gl.getUniformLocation(gl.program, 'u_spotlightColor');
+  if (!u_spotlightColor) {
+    console.log('Failed to get the storage location of u_spotlightColor');
+    return;
+  }  
+
   // Get the storage location of u_spotlightPos
   u_spotlightPos = gl.getUniformLocation(gl.program, 'u_spotlightPos');
   if (!u_spotlightPos) {
@@ -440,11 +449,9 @@ let g_lightOn = true;
 let g_lightPos = [0, 1, 2];
 let g_lightAnimation = false;
 
-let spotlightAngle = 20; // Spotlight width
-let spotlightSoftness = 5; // Smoother transition
 let g_innerCutoff;
 let g_outerCutoff;
-
+let spotlightColor = [1.0, 1.0, 1.0];
 let g_spotlightOn = false;
 let g_spotlightPos = [0, 1, 2];
 let g_spotlightDirection = [0, -1, 0];
@@ -509,6 +516,10 @@ function addActionsforHtmlUI() {
 
   document.getElementById('spotlightAnimOn').onclick = function() { g_spotlightAnimation = true; };
   document.getElementById('spotlightAnimOff').onclick = function() { g_spotlightAnimation = false; };
+
+  document.getElementById('spotcolorRed').onmousemove = function () { spotlightColor[0] = this.value/100; renderAllShapes(); };
+  document.getElementById('spotcolorGreen').onmousemove = function () { spotlightColor[1] = this.value/100; renderAllShapes(); };
+  document.getElementById('spotcolorBlue').onmousemove = function () { spotlightColor[2] = this.value/100; renderAllShapes(); };
 
   document.getElementById('spotlightSliderX').onmousemove = function () { g_spotlightPos[0] = this.value/100; renderAllShapes(); };
   document.getElementById('spotlightSliderY').onmousemove = function () { g_spotlightPos[1] = this.value/100; renderAllShapes(); };
@@ -736,12 +747,13 @@ function renderAllShapes(ev) {
 
   // Pass the color of the light to GLSL
   gl.uniform3f(u_lightColor, lightColor[0], lightColor[1], lightColor[2]);  
-
   // Pass the light position to GLSL
   gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
   // Pass the light status
   gl.uniform1i(u_lightOn, g_lightOn);
 
+  // Pass the color of the spotlight to GLSL
+  gl.uniform3f(u_spotlightColor, spotlightColor[0], spotlightColor[1], spotlightColor[2]);  
   // Pass the spotlight position to GLSL
   gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
   // Pass the spotlight direction to GLSL
@@ -752,11 +764,11 @@ function renderAllShapes(ev) {
   var light = new Cube();
   light.color = [1.0, 1.0, 0.0, 1.0];
   light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-  light.matrix.scale(-0.1, -0.1, -0.1);
+  light.matrix.scale(-0.5, -0.5, -0.5);
   light.render();
 
   var spotlight = new Cube();
-  spotlight.color = [1.0, 1.0, 1.0, 1.0];
+  spotlight.color = [1.0, 0.5, 0.0, 1.0];
   spotlight.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
   spotlight.matrix.scale(-0.5, -0.5, -0.5);
   spotlight.render();
@@ -769,12 +781,14 @@ function renderAllShapes(ev) {
   skyBox.render();
 
   var cube = new Cube();
+  cube.color = [0.0, 1.0, 1.0, 1.0]
   cube.textureNum = normals? NORMALCOLOR : g_textureNum;
   cube.matrix.translate(-2.0, -2.0, -0.6);
   cube.matrix.scale(0.8, 0.8, 0.8);
   cube.render();
 
   var sphere = new Sphere();
+  sphere.color = [1.0, 0.0, 0.0, 1.0]
   sphere.textureNum = normals? NORMALCOLOR : g_textureNum;
   sphere.matrix.translate(0.0, -1.0, 1.5);
   sphere.matrix.scale(0.5, 0.5, 0.5);
@@ -789,7 +803,7 @@ function renderAllShapes(ev) {
   floor.render();
 
   var duration = performance.now() - startTime;
-  sendToTextHTML(`ms: ${Math.floor(duration)} fps: ${Math.floor(10000/duration)}`, "numdot");
+  //sendToTextHTML(`ms: ${Math.floor(duration)} fps: ${Math.floor(10000/duration)}`, "numdot");
   let textureName;
   switch (parseInt(g_textureNum, 10)) {
     case -3:

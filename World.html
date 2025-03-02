@@ -7,52 +7,56 @@
 
   <body onload="main()">
     <canvas id="webgl" width="500" height="500">
-    Please use a browser that supports "canvas"
+        Please use a browser that supports "canvas"
     </canvas>
-    <br><span id="numdot">XYZ</span> 
-    <br>Normals: <button type="button" id="normalsOn">ON</button>
-    <button type="button" id="normalsOff">OFF</button>
-    <br><br>Input<input id="textureInput" type="number" value="-2" step="1"/><span id="textureType">XYZ</span> 
-    <button type="button" id="skyboxTexture">Change SkyBox Texture</button>
+    <!--<br><span id="numdot">XYZ</span>-->
+    <div id="settings">
+        <p>Normals: <button type="button" id="normalsOn">ON</button>
+        <button type="button" id="normalsOff">OFF</button>
+        Input<input id="textureInput" type="number" value="-2" step="1"/>
+        <span id="textureType">XYZ</span> 
+        <button type="button" id="skyboxTexture">Change SkyBox Texture</button></p>
 
-    <p>Point Light<br>
-      Light: <button type="button" id="lightOn">ON</button>
-      <button type="button" id="lightOff">OFF</button>  
-      Light Animation: <button type="button" id="lightAnimOn">ON</button>
-      <button type="button" id="lightAnimOff">OFF</button>    
-      <br>
-      Light Color Red <input type="range" min="0" max="100" value="100" class="slider" id="colorRed">
-      Light Color Blue <input type="range" min="0" max="100" value="100" class="slider" id="colorGreen">
-      Light Color Green <input type="range" min="0" max="100" value="100" class="slider" id="colorBlue">
-      <br>
-      Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderX">
-      Light Y <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderY">
-      Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderZ">
-      <br>
-      Specular <input type="range" min="0" max="100" value="80" class="slider" id="specularVal">
-      Diffuse <input type="range" min="0" max="100" value="70" class="slider" id="diffuseVal">
-      Ambient <input type="range" min="0" max="100" value="20" class="slider" id="ambientVal">
+        <p><b>Point Light</b><br>
+        Light: <button type="button" id="lightOn">ON</button>
+        <button type="button" id="lightOff">OFF</button>  
+        Light Animation: <button type="button" id="lightAnimOn">ON</button>
+        <button type="button" id="lightAnimOff">OFF</button>    
+        <br>
+        Light Color Red <input type="range" min="0" max="100" value="100" class="slider" id="colorRed">
+        Light Color Green <input type="range" min="0" max="100" value="100" class="slider" id="colorGreen">
+        Light Color Blue <input type="range" min="0" max="100" value="100" class="slider" id="colorBlue">
+        <br>
+        Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderX">
+        Light Y <input type="range" min="-250" max="250" value="250" class="slider" id="lightSliderY">
+        Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderZ">
+        <br>
+        Specular <input type="range" min="0" max="100" value="80" class="slider" id="specularVal">
+        Diffuse <input type="range" min="0" max="100" value="70" class="slider" id="diffuseVal">
+        Ambient <input type="range" min="0" max="100" value="20" class="slider" id="ambientVal"></p>
 
-    <p>Spot Light<br>
-      Light: <button type="button" id="spotlightOn">ON</button>
-      <button type="button" id="spotlightOff">OFF</button>  
-      Light Animation: <button type="button" id="spotlightAnimOn">ON</button>
-      <button type="button" id="spotlightAnimOff">OFF</button>    
-      <br>
-      Light Color Red <input type="range" min="0" max="100" value="100" class="slider" id="colorRed">
-      Light Color Blue <input type="range" min="0" max="100" value="100" class="slider" id="colorGreen">
-      Light Color Green <input type="range" min="0" max="100" value="100" class="slider" id="colorBlue">
-      <br>
-      Light X <input type="range" min="-250" max="250" value="250" class="slider" id="spotlightSliderX">
-      Light Y <input type="range" min="-250" max="250" value="250" class="slider" id="spotlightSliderY">
-      Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="spotlightSliderZ">
-      <br>
-      light Inner Cutoff <input type="range" min="0" max="180" value="14" class="slider" id="lightInnerCutoff">
-      light Outer Cutoff <input type="range" min="0" max="180" value="0" class="slider" id="lightOuterCutoff">
-    
-    <p>Camera Rotate: (Left Arrow)(Right Arrow) or Click and Drag Mouse
-    <br>Camera Movement: (W)(A)(S)(D)
-    <br>Camera Verticality: (Up Arrow)(Down Arrow)
+        <p><b>Spot Light</b><br>
+        Light: <button type="button" id="spotlightOn">ON</button>
+        <button type="button" id="spotlightOff">OFF</button>  
+        Light Animation: <button type="button" id="spotlightAnimOn">ON</button>
+        <button type="button" id="spotlightAnimOff">OFF</button>    
+        <br>
+        Light Color Red <input type="range" min="0" max="100" value="100" class="slider" id="spotcolorRed">
+        Light Color Green <input type="range" min="0" max="100" value="100" class="slider" id="spotcolorGreen">
+        Light Color Blue <input type="range" min="0" max="100" value="100" class="slider" id="spotcolorBlue">
+        <br>
+        Light X <input type="range" min="-250" max="250" value="250" class="slider" id="spotlightSliderX">
+        Light Y <input type="range" min="-250" max="250" value="250" class="slider" id="spotlightSliderY">
+        Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="spotlightSliderZ">
+        <br>
+        Light Inner Cutoff <input type="range" min="0" max="180" value="14" class="slider" id="lightInnerCutoff">
+        Light Outer Cutoff <input type="range" min="0" max="180" value="0" class="slider" id="lightOuterCutoff"></p>
+
+        <p><b>Camera Controls</b><br>
+        Rotate: (Left Arrow)(Right Arrow) or Click and Drag Mouse<br>
+        Movement: (W)(A)(S)(D)<br>
+        Verticality: (Up Arrow)(Down Arrow)</p>
+    </div>
 
     <script src="lib/webgl-utils.js"></script>
     <script src="lib/webgl-debug.js"></script>
@@ -67,5 +71,5 @@
     <script src="Point.js"></script>
     <script src="Camera.js"></script>
     <script src="World.js"></script>
-  </body>
+</body>
 </html>
