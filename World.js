@@ -150,7 +150,7 @@ var FSHADER_SOURCE =`
     
     float spotDiffuse = max(0.0, dot(surfaceToLight, N));
     float angleToSurface = dot(u_spotlightDirection, lightToSurface);
-    float spot = smoothstep(u_lightOuterCutoff, u_lightInnerCutoff, angleToSurface);
+    float spot = smoothstep(u_lightInnerCutoff, u_lightOuterCutoff, angleToSurface);
 
     float brightness = spotDiffuse * spot;
 
@@ -440,9 +440,14 @@ let g_lightOn = true;
 let g_lightPos = [0, 1, 2];
 let g_lightAnimation = false;
 
+let spotlightAngle = 20; // Spotlight width
+let spotlightSoftness = 5; // Smoother transition
+let g_innerCutoff;
+let g_outerCutoff;
+
 let g_spotlightOn = false;
 let g_spotlightPos = [0, 1, 2];
-let g_spotlightDirection = [0, 1, 0];
+let g_spotlightDirection = [0, -1, 0];
 let g_spotlightAnimation = false;
 
 let g_bodyAnimationOn = true;
@@ -475,6 +480,10 @@ function addActionsforHtmlUI() {
   document.getElementById('lightSliderY').onmousemove = function () { g_lightPos[1] = this.value/100; renderAllShapes(); };
   document.getElementById('lightSliderZ').onmousemove = function () { g_lightPos[2] = this.value/100; renderAllShapes(); };
 
+  g_lightPos[0] = document.getElementById('lightSliderX').value / 100;
+  g_lightPos[1] = document.getElementById('lightSliderY').value / 100;
+  g_lightPos[2] = document.getElementById('lightSliderZ').value / 100;
+
   document.getElementById('specularVal').onmousemove = function () { 
     gl.uniform1f(u_specularPow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
@@ -505,18 +514,25 @@ function addActionsforHtmlUI() {
   document.getElementById('spotlightSliderY').onmousemove = function () { g_spotlightPos[1] = this.value/100; renderAllShapes(); };
   document.getElementById('spotlightSliderZ').onmousemove = function () { g_spotlightPos[2] = this.value/100; renderAllShapes(); };
 
+  g_spotlightPos[0] = document.getElementById('spotlightSliderX').value / 100;
+  g_spotlightPos[1] = document.getElementById('spotlightSliderY').value / 100;
+  g_spotlightPos[2] = document.getElementById('spotlightSliderZ').value / 100;
+
   document.getElementById('lightInnerCutoff').onmousemove = function () { 
-    gl.uniform1f(u_lightInnerCutoff, this.value); 
+    let angle = this.value * Math.PI / 180; // Convert to radians
+    gl.uniform1f(u_lightInnerCutoff, Math.cos(angle)); // Use cosine
     renderAllShapes(); 
-  };
+};
 
-  document.getElementById('lightOuterCutoff').onmousemove = function () { 
-    gl.uniform1f(u_lightOuterCutoff, this.value); 
+document.getElementById('lightOuterCutoff').onmousemove = function () { 
+    let angle = this.value * Math.PI / 180; // Convert to radians
+    gl.uniform1f(u_lightOuterCutoff, Math.cos(angle)); // Use cosine
     renderAllShapes(); 
-  };
+};
 
-  gl.uniform1f(u_lightInnerCutoff, document.getElementById('lightInnerCutoff').value); // Set default specular power
-  gl.uniform1f(u_lightOuterCutoff, document.getElementById('lightOuterCutoff').value); // Set default specular power
+
+  gl.uniform1f(u_lightInnerCutoff, Math.cos(document.getElementById('lightInnerCutoff').value * Math.PI / 180))
+  gl.uniform1f(u_lightOuterCutoff, Math.cos(document.getElementById('lightOuterCutoff').value * Math.PI / 180))
 }
 
 let startingMouseX = 0;
@@ -754,21 +770,20 @@ function renderAllShapes(ev) {
 
   var cube = new Cube();
   cube.textureNum = normals? NORMALCOLOR : g_textureNum;
-  cube.matrix.translate(0.0, -2.0, -0.6);
+  cube.matrix.translate(-2.0, -2.0, -0.6);
   cube.matrix.scale(0.8, 0.8, 0.8);
   cube.render();
 
   var sphere = new Sphere();
   sphere.textureNum = normals? NORMALCOLOR : g_textureNum;
-  sphere.matrix.translate(0.0, -1.0, 2);
+  sphere.matrix.translate(0.0, -1.0, 1.5);
   sphere.matrix.scale(0.5, 0.5, 0.5);
-  //sphere.normalMatrix.setInverseOf(sphere.matrix).transpose();
   sphere.render();
 
   renderDavyJones();
 
   var floor = new Cube();
-  floor.textureNum = COLOR;
+  floor.textureNum = normals? NORMALCOLOR : g_textureNum;
   floor.matrix.translate(-3.0, -3.0, 2.0);
   floor.matrix.scale(5.0, 0.2, 5.0);
   floor.render();
@@ -882,7 +897,7 @@ function renderDavyJones()
   // Body if there is time
   upperBody = new Pyramid();
   upperBody.color = clothesColor;
-  upperBody.matrix.translate(-1, -1, 1);
+  upperBody.matrix.translate(-1, -1.9, -0.5);
   upperBody.matrix.rotate(180, 0, 1, 0);
   upperBody.matrix.scale(0.3, 0.3, 0.3);
   var bodyCoordinatesMat = new Matrix4(upperBody.matrix);
