@@ -41,14 +41,14 @@ var FSHADER_SOURCE =`
 
   // Spotlight
   uniform bool u_spotlightOn;
-  uniform vec3 u_spotLightPos;
-  uniform vec3 u_spotLightDirection;
+  uniform vec3 u_spotlightPos;
+  uniform vec3 u_spotlightDirection;
   uniform float u_lightInnerCutoff; // cosine angle
   uniform float u_lightOuterCutoff; // cosing angle
 
-  //uniform float u_spotSpecularPow;
-  //uniform float u_spotDiffusePow;
-  //uniform float u_spotAmbientPow;
+  uniform float u_spotSpecularPow;
+  uniform float u_spotDiffusePow;
+  uniform float u_spotAmbientPow;
 
   // Textures
   uniform sampler2D u_Sampler;
@@ -143,28 +143,22 @@ var FSHADER_SOURCE =`
       }
     }
 
-    // Spotlight logic
-    vec3 offset = u_spotLightPos - vec3(v_VertPos);
+    vec3 offset = u_spotlightPos - vec3(v_VertPos);
     vec3 surfaceToLight = normalize(offset);
-
-    // Compute diffuse lighting
+    vec3 lightToSurface = -surfaceToLight;
+    
     float spotDiffuse = max(0.0, dot(surfaceToLight, N));
-
-    // Compute spotlight angle effect
-    float angleToSurface = dot(u_spotLightDirection, surfaceToLight);
+    float angleToSurface = dot(u_spotlightDirection, lightToSurface);
     float spot = smoothstep(u_lightOuterCutoff, u_lightInnerCutoff, angleToSurface);
 
-    // Compute brightness factor
     float brightness = spotDiffuse * spot;
-    
-    if (u_spotlightOn) 
+
+    if(u_spotlightOn)
     {
-      // Add spotlight contribution to final color
       gl_FragColor.rgb += vec3(1.0, 0.0, 1.0) * brightness;
       gl_FragColor.a = 1.0;
     }
-  }
-}`
+  }`
 
 // Global Variables
 const NORMALCOLOR = -3;
@@ -272,9 +266,9 @@ function connectVariablesToGLSL() {
   if (!u_cameraPos) {
     console.log('Failed to get the storage location of u_cameraPos');
     return;
-  } 
+  }  
 
-  // Point light
+  // Point Light
   // Get the storage location of u_lightPos
   u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
   if (!u_lightPos) {
@@ -297,7 +291,7 @@ function connectVariablesToGLSL() {
   }  
 
   // Get the storage location of u_diffusePow
-  u_diffusePow = gl.getUniformLocation(gl.program, 'u_DiffusePow');
+  u_diffusePow = gl.getUniformLocation(gl.program, 'u_diffusePow');
   if (!u_diffusePow) {
     console.log('Failed to get the storage location of u_diffusePow');
     return;
@@ -308,8 +302,8 @@ function connectVariablesToGLSL() {
   if (!u_ambientPow) {
     console.log('Failed to get the storage location of u_ambientPow');
     return;
-  } 
-  
+  }  
+
   // Spotlights
   // Get the storage location of u_spotlightPos
   u_spotlightPos = gl.getUniformLocation(gl.program, 'u_spotlightPos');
@@ -336,21 +330,21 @@ function connectVariablesToGLSL() {
   u_spotSpecularPow = gl.getUniformLocation(gl.program, 'u_spotSpecularPow');
   if (!u_spotSpecularPow) {
     console.log('Failed to get the storage location of u_spotSpecularPow');
-    return;
+    //return;
   }  
 
   // Get the storage location of u_spotDiffusePow
   u_spotDiffusePow = gl.getUniformLocation(gl.program, 'u_spotDiffusePow');
   if (!u_spotDiffusePow) {
     console.log('Failed to get the storage location of u_spotDiffusePow');
-    return;
+    //return;
   }  
 
   // Get the storage location of u_spotAmbientPow
   u_spotAmbientPow = gl.getUniformLocation(gl.program, 'u_spotAmbientPow');
   if (!u_spotAmbientPow) {
     console.log('Failed to get the storage location of u_spotAmbientPow');
-    return;
+    //return;
   } 
  
   // Matrices
@@ -446,13 +440,16 @@ let g_lightAnimation = false;
 
 let g_spotlightOn = true;
 let g_spotlightPos = [0, 1, 2];
-let g_spotlightDirection = [0, 0, 0];
+let g_spotlightDirection = [0, -1, 0];
 let g_spotlightAnimation = false;
+
+let skyBoxTexture = SKYTEXTURE;
 
 function addActionsforHtmlUI() {
   document.getElementById('normalsOn').onclick = function() { normals = true; };
   document.getElementById('normalsOff').onclick = function() { normals = false; };
   document.getElementById('textureInput').onclick = function () { g_textureNum = this.value; renderAllShapes(); };
+  document.getElementById('skyboxTexture').onclick = function () { skyBoxTexture = g_textureNum; renderAllShapes(); };
 
   // Point Light
   document.getElementById('lightOn').onclick = function() { g_lightOn = true; };
@@ -466,17 +463,17 @@ function addActionsforHtmlUI() {
   document.getElementById('lightSliderZ').onmousemove = function () { g_lightPos[2] = this.value/100; renderAllShapes(); };
 
   document.getElementById('specularVal').onmousemove = function () { 
-    gl.uniform1f(u_SpecularPow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_specularPow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
   document.getElementById('diffuseVal').onmousemove = function () { 
-    gl.uniform1f(u_DiffusePow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_diffusePow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
   document.getElementById('ambientVal').onmousemove = function () { 
-    gl.uniform1f(u_AmbientPow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_ambientPow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
@@ -485,7 +482,6 @@ function addActionsforHtmlUI() {
   gl.uniform1f(u_ambientPow, document.getElementById('ambientVal').value / 100); // Set default specular power
 
   // Spot Light
-  /*
   document.getElementById('spotlightOn').onclick = function() { g_spotlightOn = true; };
   document.getElementById('spotlightOff').onclick = function() { g_spotlightOn = false; };
 
@@ -497,26 +493,24 @@ function addActionsforHtmlUI() {
   document.getElementById('spotlightSliderZ').onmousemove = function () { g_spotlightPos[2] = this.value/100; renderAllShapes(); };
 
   document.getElementById('spotSpecularVal').onmousemove = function () { 
-    gl.uniform1f(u_SpotSpecularPow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_spotSpecularPow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
   document.getElementById('spotDiffuseVal').onmousemove = function () { 
-    gl.uniform1f(u_SpotDiffusePow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_spotDiffusePow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
   document.getElementById('spotAmbientVal').onmousemove = function () { 
-    gl.uniform1f(u_SpotAmbientPow, parseFloat(this.value) / 100); 
+    gl.uniform1f(u_spotAmbientPow, parseFloat(this.value) / 100); 
     renderAllShapes(); 
   };
 
-  gl.uniform1f(u_SpotSpecularPow, document.getElementById('spotSpecularVal').value / 100); // Set default specular power
-  gl.uniform1f(u_SpotDiffusePow, document.getElementById('spotDiffuseVal').value / 100); // Set default specular power
-  gl.uniform1f(u_SpotAmbientPow, document.getElementById('spotAmbientVal').value / 100); // Set default specular power
-  */
+  gl.uniform1f(u_spotSpecularPow, document.getElementById('spotSpecularVal').value / 100); // Set default specular power
+  gl.uniform1f(u_spotDiffusePow, document.getElementById('spotDiffuseVal').value / 100); // Set default specular power
+  gl.uniform1f(u_spotAmbientPow, document.getElementById('spotAmbientVal').value / 100); // Set default specular power
 }
-
 
 let startingMouseX = 0;
 let dragging = false;
@@ -680,6 +674,12 @@ function updateAnimationAngles() {
     g_lightPos[0] = newValue;
     document.getElementById('lightSliderX').value = newValue * 250; // Update slider position
   }
+  if (g_spotlightAnimation) {
+    let newValue = Math.cos(g_seconds); // Scale cosine range to match slider range
+
+    g_spotlightPos[0] = newValue;
+    document.getElementById('spotlightSliderX').value = newValue * 250; // Update slider position
+  }
 }
 
 
@@ -695,14 +695,20 @@ function renderAllShapes(ev) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Pass the light position to GLSL
-  gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-
   // Pass the camera position to GLSL
   gl.uniform3f(u_cameraPos, camera.eye.elements[0], camera.eye.elements[1], camera.eye.elements[2]);
 
+  // Pass the light position to GLSL
+  gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
   // Pass the light status
   gl.uniform1i(u_lightOn, g_lightOn);
+
+  // Pass the spotlight position to GLSL
+  gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+  // Pass the spotlight direction to GLSL
+  gl.uniform3f(u_spotlightDirection, g_spotlightDirection[0], g_spotlightDirection[1], g_spotlightDirection[2]);
+  // Pass the spotlight status
+  gl.uniform1i(u_spotlightOn, g_spotlightOn);
   
   var light = new Cube();
   light.color = [1.0, 1.0, 0.0, 1.0];
@@ -710,14 +716,15 @@ function renderAllShapes(ev) {
   light.matrix.scale(-0.1, -0.1, -0.1);
   light.render();
 
-  var spotLight = new Cube();
-  spotLight.color = [1.0, 0.0, 1.0, 1.0];
-  spotLight.matrix.scale(-0.1, -0.1, -0.1);
-  spotLight.render();
+  var spotlight = new Cube();
+  spotlight.color = [1.0, 1.0, 1.0, 1.0];
+  spotlight.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+  spotlight.matrix.scale(-0.5, -0.5, -0.5);
+  spotlight.render();
 
   var skyBox = new Cube();
   skyBox.color = [ 0.0, 0.2, 0.2, 1.0 ];
-  skyBox.textureNum = SKYTEXTURE;
+  skyBox.textureNum = skyBoxTexture;
   skyBox.matrix.scale(20, 20, 20);
   skyBox.matrix.translate(-0.5, -0.5, 0.5);
   skyBox.render();
