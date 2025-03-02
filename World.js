@@ -758,12 +758,6 @@ function renderAllShapes(ev) {
   cube.matrix.scale(0.8, 0.8, 0.8);
   cube.render();
 
-  var floor = new Cube();
-  floor.textureNum = COLOR;
-  floor.matrix.translate(-3.0, -3.0, 2.0);
-  floor.matrix.scale(5.0, 0.2, 5.0);
-  floor.render();
-
   var sphere = new Sphere();
   sphere.textureNum = normals? NORMALCOLOR : g_textureNum;
   sphere.matrix.translate(0.0, -1.0, 2);
@@ -772,6 +766,12 @@ function renderAllShapes(ev) {
   sphere.render();
 
   renderDavyJones();
+
+  var floor = new Cube();
+  floor.textureNum = COLOR;
+  floor.matrix.translate(-3.0, -3.0, 2.0);
+  floor.matrix.scale(5.0, 0.2, 5.0);
+  floor.render();
 
   var duration = performance.now() - startTime;
   sendToTextHTML(`ms: ${Math.floor(duration)} fps: ${Math.floor(10000/duration)}`, "numdot");
@@ -876,7 +876,7 @@ function drawTentacle(attachedMat, pos, rotation, segments, delay) {
 
 function renderDavyJones() 
 {
-  var darkerColor = 0.05;
+  var darkerColor = 0.0;
   var clothesColor = [0.16 - darkerColor, 0.11 - darkerColor, 0.05 - darkerColor, 1.0];  
 
   // Body if there is time
