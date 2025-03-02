@@ -4,8 +4,8 @@ class Camera {
         this.movementSpeed = 0.2;
         this.alpha = 1;
 
-        this.eye = new Vector3([10, 0, -2]);
-        this.at = new Vector3([0, 0, 0]);
+        this.eye = new Vector3([-0.6, 0, 6.5]);
+        this.at = new Vector3([-0.6, 0, 4.0]);
         this.up = new Vector3([0, 1, 0]);
 
         this.projectionMatrix = new Matrix4();        
