@@ -9,27 +9,43 @@
     <canvas id="webgl" width="500" height="500">
     Please use a browser that supports "canvas"
     </canvas>
-    <p><span id="numdot">XYZ</span> 
-    <p>Normals: <button type="button" id="normalsOn">ON</button>
+    <br><span id="numdot">XYZ</span> 
+    <br>Normals: <button type="button" id="normalsOn">ON</button>
     <button type="button" id="normalsOff">OFF</button>
-    <br>Light: <button type="button" id="lightOn">ON</button>
+    <br>Input<input id="textureInput" type="number" value="-2" step="1"/><span id="textureType">XYZ</span> 
+    <button type="button" id="skyboxTexture">Change SkyBox Texture</button>
+
+    <p>Point Light<br>
+      Light: <button type="button" id="lightOn">ON</button>
       <button type="button" id="lightOff">OFF</button>  
       Light Animation: <button type="button" id="lightAnimOn">ON</button>
       <button type="button" id="lightAnimOff">OFF</button>    
-    <p>
-    Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderX">
-    Light Y <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderY">
-    Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderZ">
-    <br>
-    Specular <input type="range" min="0" max="100" value="80" class="slider" id="specularVal">
-    Diffuse <input type="range" min="0" max="100" value="70" class="slider" id="diffuseVal">
-    Ambient <input type="range" min="0" max="100" value="20" class="slider" id="ambientVal">
-    <p>
-    Input<input id="textureInput" type="number" value="-2" step="1"/><span id="textureType">XYZ</span> 
+      <br>
+      Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderX">
+      Light Y <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderY">
+      Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="lightSliderZ">
+      <br>
+      Specular <input type="range" min="0" max="100" value="80" class="slider" id="specularVal">
+      Diffuse <input type="range" min="0" max="100" value="70" class="slider" id="diffuseVal">
+      Ambient <input type="range" min="0" max="100" value="20" class="slider" id="ambientVal">
+
+    <p>Spot Light<br>
+      Light: <button type="button" id="spotlightOn">ON</button>
+      <button type="button" id="spotlightOff">OFF</button>  
+      Light Animation: <button type="button" id="spotlightAnimOn">ON</button>
+      <button type="button" id="spotlightAnimOff">OFF</button>    
+      <br>
+      Light X <input type="range" min="-250" max="250" value="0" class="slider" id="spotlightSliderX">
+      Light Y <input type="range" min="-250" max="250" value="0" class="slider" id="spotlightSliderY">
+      Light Z <input type="range" min="-250" max="250" value="0" class="slider" id="spotlightSliderZ">
+      <br>
+      Specular <input type="range" min="0" max="100" value="80" class="slider" id="spotSpecularVal">
+      Diffuse <input type="range" min="0" max="100" value="70" class="slider" id="spotDiffuseVal">
+      Ambient <input type="range" min="0" max="100" value="20" class="slider" id="spotAmbientVal">
     
-    <p>Camera Rotate:  (Z)(X) or (Left Arrow)(Right Arrow) or Click and Drag Mouse
-    <br>Camera Movement:    (W)(A)(S)(D)
-    <br>Camera Verticality: (Q)(E) or (Up Arrow)(Down Arrow)
+    <p>Camera Rotate: (Left Arrow)(Right Arrow) or Click and Drag Mouse
+    <br>Camera Movement: (W)(A)(S)(D)
+    <br>Camera Verticality: (Up Arrow)(Down Arrow)
 
     <script src="lib/webgl-utils.js"></script>
     <script src="lib/webgl-debug.js"></script>
